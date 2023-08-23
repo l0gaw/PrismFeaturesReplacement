@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<TabbedPage x:Class="PrismFeaturesReplacement.Views.MainTabbedPage"
+            xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"  
+            xmlns:views="clr-namespace:PrismFeaturesReplacement.Views"
+            xmlns:android="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;assembly=Microsoft.Maui.Controls"
+            android:TabbedPage.IsSmoothScrollEnabled="False"
+            android:TabbedPage.IsSwipePagingEnabled="False"
+            android:TabbedPage.ToolbarPlacement="Bottom"
+            BarBackgroundColor="#1C1C1C" 
+            SelectedTabColor="White"
+            SelectedTabPageIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
+            NavigationPage.HasNavigationBar="{Binding IsNavigationBarVisible}"
+            UnselectedTabColor="#66FFFFFF">
+    <NavigationPage Title="Page 1">
+        <x:Arguments>
+            <views:PageOne />
+        </x:Arguments>
+    </NavigationPage>
+    <NavigationPage Title="Page 2">
+        <x:Arguments>
+            <views:PageTwo />
+        </x:Arguments>
+    </NavigationPage>
+    <NavigationPage Title="Page 3">
+        <x:Arguments>
+            <views:PageThree  />
+        </x:Arguments>
+    </NavigationPage>
+</TabbedPage>
+

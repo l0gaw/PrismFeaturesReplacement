@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="PrismFeaturesReplacement.Views.PageTwo"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             NavigationPage.HasNavigationBar="False"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <ScrollView>
+        <VerticalStackLayout Padding="30,0"
+                             Spacing="25"
+                             VerticalOptions="Center">
+
+            <Label FontSize="32"
+                   HorizontalOptions="Center"
+                   Text="Page Two" />
+
+            <Button Command="{Binding PublishParameterlessEventCommand}"
+                    HorizontalOptions="Center"
+                    Text="Publish Parameterless Event" />
+             <VerticalStackLayout HorizontalOptions="Center" Spacing="5">
+                    <Button Command="{Binding PublishBoolParameterEventCommand}"
+                        HorizontalOptions="Center" 
+                        Text="Publish Bool Parameter Event" /> 
+                <Switch  HorizontalOptions="Center"  IsToggled="{Binding BoolValue}" />  
+             </VerticalStackLayout> 
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
+
