@@ -12,13 +12,20 @@ public partial class PageOneViewModel : BaseViewModel
     }
 
     public override void Destroy()
-    { 
+    {
+        base.Destroy();
     }
 
     [RelayCommand]
     private Task Navigate()
     {
         return NavigationService.NavigateToAsync(Routes.Page4);
-    } 
+    }
+
+    [RelayCommand]
+    private Task NavigateToMainPage()
+    {
+        return NavigationService.NavigateToAsync(Routes.Main, navigationMode: Services.NavigationMode.AbsoluteNavigation);
+    }
 }
 

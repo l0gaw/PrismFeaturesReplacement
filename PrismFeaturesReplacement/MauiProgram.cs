@@ -48,6 +48,7 @@ public static class MauiProgram
         builder.Services.AddTransient<NavigationPage>(); 
         builder.Services.RegisterRoute<MainPage, MainViewModel>();
         builder.Services.RegisterRoute<MainTabbedPage, MainTabbedViewModel>();
+        builder.Services.RegisterRoute<MainFlyoutPage, MainFlyoutViewModel>();
         builder.Services.RegisterRoute<PageOne, PageOneViewModel>();
         builder.Services.RegisterRoute<PageTwo, PageTwoViewModel>();
         builder.Services.RegisterRoute<PageThree, PageThreeViewModel>();

@@ -13,7 +13,8 @@ public partial class PageFourViewModel : BaseViewModel
     }
 
     public override void Destroy()
-    { 
+    {
+        base.Destroy();
     } 
 
     [RelayCommand]

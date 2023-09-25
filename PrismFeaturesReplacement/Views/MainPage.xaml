@@ -1,23 +1,31 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentPage x:Class="PrismFeaturesReplacement.Views.MainPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             NavigationPage.HasNavigationBar="False"
-             x:Class="PrismFeaturesReplacement.Views.MainPage"> 
+             xmlns:vm="clr-namespace:PrismFeaturesReplacement.ViewModels"
+             x:DataType="vm:MainViewModel"
+             NavigationPage.HasNavigationBar="False">
     <ScrollView>
-        <VerticalStackLayout
-            Spacing="25"
-            Padding="30,0"
-            VerticalOptions="Center">
-            <HorizontalStackLayout HorizontalOptions="Center" Spacing="10" VerticalOptions="Center"> 
-            <Label FontSize="18" Text="Absolute Navigation?"/>
-            <Switch IsToggled="{Binding IsAbsoluteNavigation}"/> 
+        <VerticalStackLayout Padding="30,0"
+                             Spacing="25"
+                             VerticalOptions="Center">
+            <Button Command="{Binding NavigateToTabbedCommand}"
+                    HorizontalOptions="Center"
+                    Text="Navigate to TabbedPage" />
+            <Button Command="{Binding NavigateToFlyoutCommand}"
+                    HorizontalOptions="Center"
+                    Text="Navigate to FlyoutPage" />
+            <Button Command="{Binding NavigateToPageCommand}"
+                    HorizontalOptions="Center"
+                    Text="Navigate to Page" />
+            <HorizontalStackLayout HorizontalOptions="Center"
+                                   Spacing="10"
+                                   VerticalOptions="Center">
+                <Label FontSize="18"
+                       Text="Absolute Navigation?" />
+                <Switch IsToggled="{Binding IsAbsoluteNavigation}" />
             </HorizontalStackLayout>
-            <Button 
-                Text="Navigate to TabbedPage" 
-                Command="{Binding NavigateCommand}"
-                HorizontalOptions="Center" />
-
         </VerticalStackLayout>
-    </ScrollView> 
+    </ScrollView>
 </ContentPage>
 

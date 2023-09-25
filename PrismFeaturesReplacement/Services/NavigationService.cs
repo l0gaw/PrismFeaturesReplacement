@@ -3,20 +3,24 @@
 public class NavigationService : INavigationService
 {
     private readonly IServiceProvider services;
-    private readonly NavigationPage rootNavigationPage; 
     private readonly SemaphoreSlim navSemaphore = new(1, 1);
 
-    public NavigationService(IServiceProvider services, NavigationPage rootNavigationPage)
+    public NavigationService(IServiceProvider services)
     {
         this.services = services;
-        this.rootNavigationPage = rootNavigationPage;
     }
 
     public void Initialize()
     {
-        Application.Current.MainPage = rootNavigationPage;
+        Application.Current.MainPage = CreateNavigationPage();
+    }
+
+    private NavigationPage CreateNavigationPage()
+    {
+        var rootNavigationPage = services.GetRequiredService<NavigationPage>();
         rootNavigationPage.Popped += NavigationService_Popped;
         rootNavigationPage.PoppedToRoot += NavigationService_PoppedToRoot;
+        return rootNavigationPage;
     }
 
     private void NavigationService_Popped(object sender, NavigationEventArgs e)
@@ -41,68 +45,39 @@ public class NavigationService : INavigationService
         }
     }
 
-    internal NavigationPage GetCurrentNavigationPage(bool isRoot = false)
+    internal NavigationPage GetCurrentNavigationPage() => Application.Current.MainPage switch
     {
-        var page = Application.Current.MainPage;
-        if (page is NavigationPage navPage)
-        {
-            if (isRoot)
-            {
-                return navPage;
-            }
+        NavigationPage navPage => navPage,
+        TabbedPage tabbed when tabbed.CurrentPage is NavigationPage tabbedNavPage => tabbedNavPage,
+        FlyoutPage flyout when flyout.Detail is NavigationPage flyoutNavPage => flyoutNavPage,
+        _ => null,
+    };
 
-            if (navPage.CurrentPage is TabbedPage tabbed)
-            {
-                if (tabbed.CurrentPage is NavigationPage tabbedNavPage)
-                {
-                    return tabbedNavPage;
-                }
-            }
-
-            return navPage;
-        }
-
-        return null;
-    }
-
-    public Task<INavigationResult> NavigateToAsync(string route, INavigationParameters parameters = default)
-    {
-        return NavigateToAsync(route, parameters);
-    }
-
-    public async Task<INavigationResult> NavigateToAsync(string route, INavigationParameters parameters = default, bool replaceRoot = false, bool animated = true)
+    public async Task<INavigationResult> NavigateToAsync(string route, INavigationParameters parameters = default, NavigationMode navigationMode = NavigationMode.Push, bool animated = true)
     {
         try
         {
             await navSemaphore.WaitAsync();
             var (toPage, toViewModel) = ResolvePage(route);
-            var currentNavPage = GetCurrentNavigationPage(replaceRoot);
+            var currentNavPage = GetCurrentNavigationPage();
 
             //Call Initialize on VM, passing in the paramter
             if (toViewModel is not null)
             {
                 SetBindingContext(toPage, toViewModel);
-                _ = InitializeViewModel(toPage, toViewModel, parameters ?? new NavigationParameters());
             }
 
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                //Navigate to requested page
-                if (replaceRoot)
-                {
-                    await PushPage(currentNavPage, toPage, animated);
-                    RemovePagesTo(currentNavPage, toPage);
-                }
-                else
-                {
-                    await PushPage(currentNavPage, toPage, animated);
-                }
+                await PushPage(currentNavPage, toPage, navigationMode, animated);
             });
+
+            _ = InitializeViewModel(toPage, toViewModel, parameters ?? new NavigationParameters());
 
             return new NavigationResult();
         }
         catch (Exception ex)
-        { 
+        {
             return new NavigationResult { Exception = ex };
         }
         finally
@@ -123,14 +98,34 @@ public class NavigationService : INavigationService
                 rootPage.BindingContext = chViewModel;
             }
         }
+
+        if (toPage is FlyoutPage flyoutPage)
+        {
+            flyoutPage.BindingContext = flyoutPage.Flyout.BindingContext = toViewModel;
+            var rootPage = flyoutPage.Detail is NavigationPage np ? np.CurrentPage : flyoutPage.Detail;
+            if (rootPage is null)
+                return;
+
+            var (_, chViewModel) = ResolvePage(rootPage.GetType().Name);
+            rootPage.BindingContext = chViewModel;
+        }
+
         toPage.BindingContext = toViewModel;
     }
 
     private async Task InitializeViewModel(Page toPage, BaseViewModel toViewModel, INavigationParameters parameters)
     {
-        await Task.Delay(300);
+        await toViewModel.Initialize(parameters);
 
-        _ = toViewModel.Initialize(parameters);
+        if (toPage is FlyoutPage flyoutPage)
+        {
+            var rootPage = flyoutPage.Detail is NavigationPage np ? np.CurrentPage : flyoutPage.Detail;
+            if (rootPage.BindingContext is BaseViewModel chViewModel)
+            {
+                _ = chViewModel.Initialize(parameters);
+            }
+        }
+
         if (toPage is TabbedPage tabbedPage)
         {
             foreach (var ch in tabbedPage.Children)
@@ -144,52 +139,164 @@ public class NavigationService : INavigationService
         }
     }
 
-    private async Task PushPage(NavigationPage navigationPage, Page toPage, bool animated)
+    private async Task PushPage(NavigationPage navigationPage, Page toPage, NavigationMode navigationMode, bool animated)
     {
         if (toPage is TabbedPage tabbedPage)
         {
-            foreach (var childPage in tabbedPage.Children)
-            {
-                if (childPage is NavigationPage cp)
-                {
-                    cp.Popped += NavigationService_Popped;
-                    cp.PoppedToRoot += NavigationService_PoppedToRoot;
-                }
-            }
+            PushTabbedPage(tabbedPage);
+            return;
         }
+
+        if (toPage is FlyoutPage flyoutPage)
+        {
+            PushFlyoutPage(flyoutPage);
+            return;
+        }
+
+        if (Application.Current.MainPage is FlyoutPage rootFlyoutPage)
+        {
+            rootFlyoutPage.IsPresented = false;
+        }
+
+        if (navigationMode == NavigationMode.AbsoluteNavigation &&
+           (Application.Current.MainPage is TabbedPage || Application.Current.MainPage is FlyoutPage))
+        {
+            var previousMainPage = Application.Current.MainPage;
+            var rootNavigationPage = CreateNavigationPage();
+            await rootNavigationPage.Navigation.PushAsync(toPage, animated);
+            Application.Current.MainPage = rootNavigationPage;
+            _ = DestroyPreviousMainPage(previousMainPage, toPage);
+            return;
+        }
+
+        if (navigationMode == NavigationMode.AbsoluteNavigation ||
+            navigationMode == NavigationMode.ReplaceToRoot)
+        {
+            if (DeviceInfo.Platform == DevicePlatform.iOS)
+            {
+                var hasBackButton = NavigationPage.GetHasBackButton(toPage);
+                NavigationPage.SetHasBackButton(toPage, false);
+                await navigationPage.Navigation.PushAsync(toPage, animated);
+                DestroyPreviousPagesTo(navigationPage, toPage);
+                NavigationPage.SetHasBackButton(toPage, hasBackButton);
+            }
+            else
+            {
+                navigationPage.Navigation.InsertPageBefore(toPage, navigationPage.Navigation.NavigationStack[0]);
+                await navigationPage.Navigation.PopToRootAsync();
+            }
+
+            return;
+        }
+
         await navigationPage.Navigation.PushAsync(toPage, animated);
     }
 
-    private void RemovePagesTo(NavigationPage currentNavPage, Page toPage)
+    private void PushFlyoutPage(FlyoutPage flyoutPage)
     {
-        foreach (var page in currentNavPage.Navigation.NavigationStack.ToList())
+        var previousMainPage = Application.Current.MainPage;
+        if (flyoutPage.Detail is NavigationPage np)
         {
-            if (page != toPage)
+            np.Popped += NavigationService_Popped;
+            np.PoppedToRoot += NavigationService_PoppedToRoot;
+        }
+        Application.Current.MainPage = flyoutPage;
+        DestroyPreviousMainPage(previousMainPage);
+    }
+
+    private void PushTabbedPage(TabbedPage tabbedPage)
+    {
+        var previousMainPage = Application.Current.MainPage;
+        foreach (var childPage in tabbedPage.Children)
+        {
+            if (childPage is NavigationPage np)
             {
-                if (page is TabbedPage tabbedPage)
-                {
-                    DestroyChildrenTabPages(tabbedPage);
-                }
-                currentNavPage.Navigation.RemovePage(page);
+                np.Popped += NavigationService_Popped;
+                np.PoppedToRoot += NavigationService_PoppedToRoot;
+            }
+        }
+        Application.Current.MainPage = tabbedPage;
+        DestroyPreviousMainPage(previousMainPage);
+    }
+
+    private Task DestroyPreviousMainPage(Page previousMainPage, Page newPage = null)
+    {
+        switch (previousMainPage)
+        {
+            case TabbedPage tabbedPage:
+                return DestroyPreviousTabbedPage(tabbedPage);
+            case FlyoutPage flyoutPage:
+                return DestroyPreviousFlyoutPage(flyoutPage);
+            case NavigationPage navigationPage:
+                DestroyPreviousPagesTo(navigationPage, newPage);
+                break;
+        }
+        return Task.CompletedTask;
+    }
+
+    private async Task DestroyPreviousTabbedPage(TabbedPage tabbedPage)
+    {
+        await DestroyChildrenTabPages(tabbedPage);
+        NavigationService_Popped(tabbedPage, new NavigationEventArgs(tabbedPage));
+    }
+
+    private async Task DestroyPreviousFlyoutPage(FlyoutPage flyoutPage)
+    {
+        await DestroyDetailPage(flyoutPage);
+        NavigationService_Popped(flyoutPage, new NavigationEventArgs(flyoutPage));
+    }
+
+    private void DestroyPreviousPagesTo(NavigationPage currentNavPage, Page toPage)
+    {
+        var navigationStack = currentNavPage.Navigation.NavigationStack.ToList();
+        foreach (var page in navigationStack)
+        {
+            if (page == toPage)
+            {
+                continue;
+            }
+
+            if (navigationStack.Count == 1)
+            {
+                currentNavPage.PoppedToRoot -= NavigationService_PoppedToRoot;
+                currentNavPage.Popped -= NavigationService_Popped;
                 NavigationService_Popped(currentNavPage, new NavigationEventArgs(page));
+            }
+            else
+            {
+                currentNavPage.Navigation.RemovePage(page);
             }
         }
     }
 
-    private void DestroyChildrenTabPages(TabbedPage tabbedPage)
+    private async Task DestroyDetailPage(FlyoutPage flyoutPage)
+    {
+        if (flyoutPage.Detail is NavigationPage navPage)
+        {
+            await navPage.PopToRootAsync();
+            NavigationService_Popped(navPage, new NavigationEventArgs(navPage.CurrentPage));
+            navPage.Popped -= NavigationService_Popped;
+            navPage.PoppedToRoot -= NavigationService_PoppedToRoot;
+            return;
+        }
+
+        NavigationService_Popped(flyoutPage, new NavigationEventArgs(flyoutPage.Detail));
+    }
+
+    private async Task DestroyChildrenTabPages(TabbedPage tabbedPage)
     {
         foreach (var childPage in tabbedPage.Children)
         {
             if (childPage is NavigationPage navPage)
             {
-                var pageList = navPage.Navigation.NavigationStack.ToList();
-                foreach (var page in pageList)
-                {
-                    NavigationService_Popped(navPage, new NavigationEventArgs(page));
-                }
+                await navPage.PopToRootAsync();
+                NavigationService_Popped(navPage, new NavigationEventArgs(navPage.CurrentPage));
                 navPage.Popped -= NavigationService_Popped;
                 navPage.PoppedToRoot -= NavigationService_PoppedToRoot;
+                continue;
             }
+
+            NavigationService_Popped(tabbedPage, new NavigationEventArgs(childPage));
         }
     }
 
@@ -205,9 +312,9 @@ public class NavigationService : INavigationService
         throw new InvalidOperationException($"Route {route} not registered!");
     }
 
-    public Task GoBackToRootAsync(bool isMainRoot = false)
+    public Task GoBackToRootAsync()
     {
-        var navPage = GetCurrentNavigationPage(isMainRoot);
+        var navPage = GetCurrentNavigationPage();
         return navPage.Navigation.PopToRootAsync();
     }
 
@@ -217,12 +324,6 @@ public class NavigationService : INavigationService
         if (navPage.Navigation.NavigationStack.Count > 1)
         {
             return navPage.PopAsync();
-        }
-
-        var rootNavPage = GetCurrentNavigationPage(true);
-        if (rootNavPage.Navigation.NavigationStack.Count > 1)
-        {
-            return rootNavPage.PopAsync();
         }
 
         Application.Current.Quit();

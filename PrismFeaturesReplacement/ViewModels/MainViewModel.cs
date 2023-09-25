@@ -1,4 +1,6 @@
-﻿namespace PrismFeaturesReplacement.ViewModels;
+﻿using NavigationMode = PrismFeaturesReplacement.Services.NavigationMode;
+
+namespace PrismFeaturesReplacement.ViewModels;
 
 public partial class MainViewModel : BaseViewModel
 {
@@ -6,7 +8,7 @@ public partial class MainViewModel : BaseViewModel
     private bool _isAbsoluteNavigation = true;
 
     public MainViewModel(INavigationService navigationService, IPageDialogService dialogService, IEventAggregator eventAggregator) : base(navigationService, dialogService, eventAggregator)
-    {  
+    {
     }
 
     public override Task Initialize(INavigationParameters parameters)
@@ -15,12 +17,25 @@ public partial class MainViewModel : BaseViewModel
     }
 
     public override void Destroy()
-    { 
+    {
+        base.Destroy();
     }
 
     [RelayCommand]
-    private Task Navigate()
+    private Task NavigateToTabbed()
     {
-        return NavigationService.NavigateToAsync(Routes.MainTabbed, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, IsAbsoluteNavigation);
+        return NavigationService.NavigateToAsync(Routes.MainTabbed, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, NavigationMode.Push);
+    }
+
+    [RelayCommand]
+    private Task NavigateToFlyout()
+    {
+        return NavigationService.NavigateToAsync(Routes.MainFlyout, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, NavigationMode.Push);
+    }
+
+    [RelayCommand]
+    private Task NavigateToPage()
+    {
+        return NavigationService.NavigateToAsync(Routes.Page1, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, IsAbsoluteNavigation ? NavigationMode.AbsoluteNavigation : NavigationMode.Push);
     }
 }

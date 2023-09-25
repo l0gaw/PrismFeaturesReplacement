@@ -34,6 +34,7 @@ public partial class MainTabbedViewModel : BaseViewModel
     public override void Destroy()
     {
         EventAggregator.UnsubscribeEvent<BoolParameterEvent>(this);
+        base.Destroy();
     } 
 }
 

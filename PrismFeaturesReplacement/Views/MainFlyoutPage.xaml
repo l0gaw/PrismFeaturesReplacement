@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<FlyoutPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+            xmlns:views="clr-namespace:PrismFeaturesReplacement.Views"
+            xmlns:vm="clr-namespace:PrismFeaturesReplacement.ViewModels"
+            x:DataType="vm:MainFlyoutViewModel"
+            x:Class="PrismFeaturesReplacement.Views.MainFlyoutPage">
+    <FlyoutPage.Flyout>
+        <views:FlyoutMenuPage SelectMenuCommand="{Binding NavigateToCommand}"/>
+    </FlyoutPage.Flyout>
+    <FlyoutPage.Detail>
+        <NavigationPage>
+            <x:Arguments>
+                <views:PageOne />
+            </x:Arguments>
+        </NavigationPage>
+    </FlyoutPage.Detail>
+</FlyoutPage>

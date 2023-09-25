@@ -15,7 +15,8 @@ public partial class PageTwoViewModel : BaseViewModel
     }
 
     public override void Destroy()
-    { 
+    {
+        base.Destroy();
     }
 
     [RelayCommand]

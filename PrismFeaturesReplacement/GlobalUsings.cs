@@ -13,3 +13,4 @@ global using CommunityToolkit.Mvvm.Messaging.Messages;
 global using System.Diagnostics;
 global using PrismFeaturesReplacement.Views;
 global using CommunityToolkit.Mvvm.Input;
+global using System.Windows.Input;
