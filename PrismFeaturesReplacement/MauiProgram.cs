@@ -25,7 +25,6 @@ public static class MauiProgram
 		return builder.Build();
 	}
 
-
     private static MauiAppBuilder RegisterDependencies(this MauiAppBuilder builder)
     {
         var serviceCollection = builder.Services;  
@@ -39,7 +38,6 @@ public static class MauiProgram
 #endif
         return builder;
     }
-
 
     private static MauiAppBuilder RegisterRoutes(this MauiAppBuilder builder)
     {

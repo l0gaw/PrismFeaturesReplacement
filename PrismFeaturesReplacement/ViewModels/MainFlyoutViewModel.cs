@@ -19,7 +19,7 @@ public partial class MainFlyoutViewModel : BaseViewModel
     [RelayCommand]
     private Task NavigateTo(string route)
     {
-        return NavigationService.NavigateToAsync(route, navigationMode: Services.NavigationMode.ReplaceToRoot);
+        return NavigationService.NavigateToAsync(route, navigationMode: Services.NavigationType.ReplaceToRoot);
     }
 }
 

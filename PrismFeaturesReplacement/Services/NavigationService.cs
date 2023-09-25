@@ -53,7 +53,7 @@ public class NavigationService : INavigationService
         _ => null,
     };
 
-    public async Task<INavigationResult> NavigateToAsync(string route, INavigationParameters parameters = default, NavigationMode navigationMode = NavigationMode.Push, bool animated = true)
+    public async Task<INavigationResult> NavigateToAsync(string route, INavigationParameters parameters = default, NavigationType navigationType = NavigationType.Push, bool animated = true)
     {
         try
         {
@@ -69,7 +69,7 @@ public class NavigationService : INavigationService
 
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await PushPage(currentNavPage, toPage, navigationMode, animated);
+                await PushPage(currentNavPage, toPage, navigationType, animated);
             });
 
             _ = InitializeViewModel(toPage, toViewModel, parameters ?? new NavigationParameters());
@@ -139,7 +139,7 @@ public class NavigationService : INavigationService
         }
     }
 
-    private async Task PushPage(NavigationPage navigationPage, Page toPage, NavigationMode navigationMode, bool animated)
+    private async Task PushPage(NavigationPage navigationPage, Page toPage, NavigationType navigationType, bool animated)
     {
         if (toPage is TabbedPage tabbedPage)
         {
@@ -158,7 +158,7 @@ public class NavigationService : INavigationService
             rootFlyoutPage.IsPresented = false;
         }
 
-        if (navigationMode == NavigationMode.AbsoluteNavigation &&
+        if (navigationType == NavigationType.AbsoluteNavigation &&
            (Application.Current.MainPage is TabbedPage || Application.Current.MainPage is FlyoutPage))
         {
             var previousMainPage = Application.Current.MainPage;
@@ -169,8 +169,8 @@ public class NavigationService : INavigationService
             return;
         }
 
-        if (navigationMode == NavigationMode.AbsoluteNavigation ||
-            navigationMode == NavigationMode.ReplaceToRoot)
+        if (navigationType == NavigationType.AbsoluteNavigation ||
+            navigationType == NavigationType.ReplaceToRoot)
         {
             if (DeviceInfo.Platform == DevicePlatform.iOS)
             {

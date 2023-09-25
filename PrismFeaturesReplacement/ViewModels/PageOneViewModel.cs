@@ -25,7 +25,7 @@ public partial class PageOneViewModel : BaseViewModel
     [RelayCommand]
     private Task NavigateToMainPage()
     {
-        return NavigationService.NavigateToAsync(Routes.Main, navigationMode: Services.NavigationMode.AbsoluteNavigation);
+        return NavigationService.NavigateToAsync(Routes.Main, navigationMode: Services.NavigationType.AbsoluteNavigation);
     }
 }
 

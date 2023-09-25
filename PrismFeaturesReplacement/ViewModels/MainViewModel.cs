@@ -1,4 +1,4 @@
-﻿using NavigationMode = PrismFeaturesReplacement.Services.NavigationMode;
+﻿using NavigationType = PrismFeaturesReplacement.Services.NavigationType;
 
 namespace PrismFeaturesReplacement.ViewModels;
 
@@ -24,18 +24,18 @@ public partial class MainViewModel : BaseViewModel
     [RelayCommand]
     private Task NavigateToTabbed()
     {
-        return NavigationService.NavigateToAsync(Routes.MainTabbed, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, NavigationMode.Push);
+        return NavigationService.NavigateToAsync(Routes.MainTabbed, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, NavigationType.Push);
     }
 
     [RelayCommand]
     private Task NavigateToFlyout()
     {
-        return NavigationService.NavigateToAsync(Routes.MainFlyout, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, NavigationMode.Push);
+        return NavigationService.NavigateToAsync(Routes.MainFlyout, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, NavigationType.Push);
     }
 
     [RelayCommand]
     private Task NavigateToPage()
     {
-        return NavigationService.NavigateToAsync(Routes.Page1, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, IsAbsoluteNavigation ? NavigationMode.AbsoluteNavigation : NavigationMode.Push);
+        return NavigationService.NavigateToAsync(Routes.Page1, new NavigationParameters { { "IsAbsoluteNavigation", IsAbsoluteNavigation } }, IsAbsoluteNavigation ? NavigationType.AbsoluteNavigation : NavigationType.Push);
     }
 }
